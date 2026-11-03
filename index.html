@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Incoterms Explorer: who pays, who carries the risk</title>
+  <meta name="description" content="Pick a route and a cargo, then slide from EXW to DDP to see who pays for each part of the trip, where the risk changes hands, and what the buyer really pays.">
+  <meta name="theme-color" content="#c8102e">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Incoterms Explorer">
+  <meta property="og:description" content="Slide from EXW to DDP and watch the cost and the risk change hands. A Seneca Polytechnic supply chain student project.">
+  <meta property="og:image" content="https://markfourman.github.io/incoterms-explorer/assets/preview.png">
+  <meta property="og:url" content="https://markfourman.github.io/incoterms-explorer/">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%23c8102e'/><text x='32' y='44' font-size='34' text-anchor='middle'>🚢</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Nunito:wght@400;700;800&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="hero">
+    <p class="kicker">A Seneca Polytechnic supply chain student project</p>
+    <h1>Incoterms Explorer</h1>
+    <p class="tagline">Who pays for each part of the trip, where the risk changes hands, and what the buyer really ends up paying.</p>
+    <p class="legend-line"><span class="who seller">Seller</span> <span class="who buyer">Buyer</span></p>
+  </header>
+
+  <main>
+    <section class="panel" aria-labelledby="h-route">
+      <h2 id="h-route"><span class="num">1</span> Pick a route</h2>
+      <div class="pick-row">
+        <div><h3>Exporter (seller) in</h3><div id="origins" class="chips" role="group"></div></div>
+        <div><h3>Importer (buyer) in</h3><div id="dests" class="chips" role="group"></div></div>
+      </div>
+      <p id="routeBadge" class="route-badge" aria-live="polite"></p>
+    </section>
+
+    <section class="panel" aria-labelledby="h-cargo">
+      <h2 id="h-cargo"><span class="num">2</span> Pick the cargo</h2>
+      <div id="cargo" class="tiles" role="group" aria-label="Cargo"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-terms">
+      <h2 id="h-terms"><span class="num">3</span> Slide from EXW to DDP</h2>
+      <p class="hint">Left: the buyer handles almost everything. Right: the seller does. Terms marked ⚓ are for sea and inland waterway only.</p>
+      <div id="termStrip" class="term-strip"></div>
+      <label class="sr-only" for="termRange">Incoterm</label>
+      <input id="termRange" class="term-range" type="range" min="0" max="10" step="1" value="3">
+      <div class="range-ends" aria-hidden="true"><span>Buyer does more</span><span>Seller does more</span></div>
+      <div id="termCard" class="term-card"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-journey">
+      <h2 id="h-journey">Who carries the risk, and who pays</h2>
+      <div class="journey-wrap">
+        <div class="row-labels" aria-hidden="true"><span>Risk</span><span>Cost</span></div>
+        <div class="journey-scroll"><ol id="journey" class="journey"></ol></div>
+      </div>
+      <p class="swipe-hint" aria-hidden="true">Swipe sideways to see the whole trip</p>
+      <p id="journeySummary" class="summary" aria-live="polite"></p>
+    </section>
+
+    <section class="panel" aria-labelledby="h-cost">
+      <h2 id="h-cost">What it costs the buyer</h2>
+      <div class="kpis">
+        <div class="kpi seller"><span>Seller’s price on the invoice</span><b id="kQuote"></b></div>
+        <div class="kpi buyer"><span>Plus costs the buyer arranges</span><b id="kBuyer"></b></div>
+        <div class="kpi total"><span>Total cost to the buyer</span><b id="kLanded"></b></div>
+      </div>
+      <h3>How the seller passes costs on</h3>
+      <p id="equation" class="equation"></p>
+      <div class="margin-row">
+        <label for="margin">Seller’s margin on what it arranges</label>
+        <output id="marginVal" for="margin">10%</output>
+        <input id="margin" type="range" min="0" max="25" step="1" value="10">
+      </div>
+      <details class="items">
+        <summary>See every cost line</summary>
+        <table><thead><tr><th scope="col">Cost</th><th scope="col">Who pays</th><th scope="col" class="num">Estimate</th></tr></thead><tbody id="items"></tbody></table>
+      </details>
+      <h3>Compare every term</h3>
+      <p class="hint">Shipping costs only, without the goods. Tap a bar to pick that term.</p>
+      <div id="bars" class="bars"></div>
+      <p class="bar-legend"><span class="who seller">Arranged by the seller (in its price)</span> <span class="who buyer">Arranged by the buyer</span></p>
+    </section>
+
+    <section class="panel" aria-labelledby="h-lessons">
+      <h2 id="h-lessons">Things to remember</h2>
+      <ul id="lessons" class="lessons" aria-live="polite"></ul>
+    </section>
+
+    <section class="panel" aria-labelledby="h-quiz">
+      <h2 id="h-quiz">Quick quiz</h2>
+      <div id="quizBox" class="quiz"></div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>Made by <a href="https://www.linkedin.com/in/mark-fourmanovskis/">Mark Fourmanovskis</a>. More projects: <a href="https://markfourman.github.io/cargo-voyage/">Cargo Voyage</a> and <a href="https://markfourman.github.io/supply-chain-workbook">Supply Chain Workbook</a>.</p>
+    <p class="fine">Costs are illustrative estimates for learning. Incoterms® is a registered trademark of the International Chamber of Commerce; this project follows Incoterms® 2020 and isn’t affiliated with the ICC or Seneca Polytechnic.</p>
+  </footer>
+
+  <script src="js/model.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
