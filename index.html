@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Incoterms Explorer: who pays, who carries the risk</title>
+  <title>Incoterms Explorer v2: who pays, who carries the risk</title>
   <meta name="description" content="Pick a route and a cargo, then slide from EXW to DDP to see who pays for each part of the trip, where the risk changes hands, and what the buyer really pays.">
   <meta name="theme-color" content="#c8102e">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Incoterms Explorer">
+  <meta property="og:title" content="Incoterms Explorer v2">
   <meta property="og:description" content="Slide from EXW to DDP and watch the cost and the risk change hands. A Seneca Polytechnic supply chain student project.">
   <meta property="og:image" content="https://markfourman.github.io/incoterms-explorer/assets/preview.png">
   <meta property="og:url" content="https://markfourman.github.io/incoterms-explorer/">
@@ -21,28 +21,43 @@
 <body>
   <header class="hero">
     <p class="kicker">A Seneca Polytechnic supply chain student project</p>
-    <h1>Incoterms Explorer</h1>
+    <h1>Incoterms Explorer <span class="v2">v2</span></h1>
     <p class="tagline">Who pays for each part of the trip, where the risk changes hands, and what the buyer really ends up paying.</p>
     <p class="legend-line"><span class="who seller">Seller</span> <span class="who buyer">Buyer</span></p>
   </header>
+  <details class="whatsnew">
+    <summary>What’s new in v2</summary>
+    <ul>
+      <li>The two worked examples from class, with the class’s own numbers: Santos to Brampton and back.</li>
+      <li>Each term written the ICC way, with its named place, and whether that place is on the origin or destination side.</li>
+      <li>Who books the main trip and calls the freight forwarder, and when insurance is required or just implied.</li>
+      <li>The C-term gap shown on the trip, plus notes on why DDP is rare and what “unloading” means.</li>
+      <li>Four new quiz questions.</li>
+    </ul>
+  </details>
 
   <main>
     <section class="panel" aria-labelledby="h-route">
       <h2 id="h-route"><span class="num">1</span> Pick a route</h2>
-      <div class="pick-row">
+      <div class="mode" role="group" aria-label="Route type">
+        <button type="button" id="modeClass" class="mode-btn" aria-pressed="true">🎓 Class examples</button>
+        <button type="button" id="modeOwn" class="mode-btn" aria-pressed="false">🧭 Build your own</button>
+      </div>
+      <div id="presetPick"><div id="presets" class="presets" role="group" aria-label="Class examples"></div></div>
+      <div id="ownPick" class="pick-row" hidden>
         <div><h3>Exporter (seller) in</h3><div id="origins" class="chips" role="group"></div></div>
         <div><h3>Importer (buyer) in</h3><div id="dests" class="chips" role="group"></div></div>
       </div>
       <p id="routeBadge" class="route-badge" aria-live="polite"></p>
     </section>
 
-    <section class="panel" aria-labelledby="h-cargo">
+    <section class="panel" id="cargoPanel" aria-labelledby="h-cargo" hidden>
       <h2 id="h-cargo"><span class="num">2</span> Pick the cargo</h2>
       <div id="cargo" class="tiles" role="group" aria-label="Cargo"></div>
     </section>
 
     <section class="panel" aria-labelledby="h-terms">
-      <h2 id="h-terms"><span class="num">3</span> Slide from EXW to DDP</h2>
+      <h2 id="h-terms"><span class="num" id="numTerms">3</span> Slide from EXW to DDP</h2>
       <p class="hint">Left: the buyer handles almost everything. Right: the seller does. Terms marked ⚓ are for sea and inland waterway only.</p>
       <div id="termStrip" class="term-strip"></div>
       <label class="sr-only" for="termRange">Incoterm</label>

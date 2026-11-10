@@ -5,7 +5,9 @@
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const money = (n) => '$' + Math.round(n).toLocaleString('en-CA');
-  const st = { o: 3, d: 0, cargo: 0, code: 'FOB', margin: 0.1 };
+  const st = { mode: 'class', preset: 0, o: 3, d: 0, cargo: 0, code: 'FOB', margin: 0.1 };
+  let kase = null;
+  const getCase = () => (st.mode === 'class' ? M.presetCase(st.preset) : M.caseFor(st.o, st.d, st.cargo));
   let est = null, terms = [], t0 = performance.now();
 
   // ---------- pickers ----------
@@ -41,7 +43,12 @@
     $('termCard').innerHTML = '<p class="term-group">' + esc(M.GROUPS[t.group]) + '</p>' +
       '<h3><span class="code">' + t.code + '</span> ' + esc(t.name) + '</h3>' +
       '<p class="badges"><span class="badge">' + (t.sea ? '⚓ Sea and inland waterway only' : '🌐 Any mode of transport') + '</span>' +
-      '<span class="badge fit-' + f + '">' + (f === 'warn' ? '⚠️ ' : '✅ ') + fitText + '</span></p>';
+      '<span class="badge fit-' + f + '">' + (f === 'warn' ? '⚠️ ' : '✅ ') + fitText + '</span></p>' +
+      '<p class="formal" title="How to write it on a contract">📝 ' + esc(est.named.full) + '</p>' +
+      '<dl class="facts">' +
+      '<div><dt>Named place</dt><dd>' + (est.named.side === 'origin' ? '📍 Origin side (E and F terms)' : '📍 Destination side (C and D terms)') + '</dd></div>' +
+      '<div><dt>Books the main trip</dt><dd>' + (est.books === 'seller' ? '🧑‍💼 ' + esc(est.kase.seller) + ', through its freight forwarder' : '🧑‍💼 ' + esc(est.kase.buyer) + ', through its freight forwarder') + '</dd></div>' +
+      '<div><dt>Insurance</dt><dd>' + (est.insurance.required ? '🛡️ ' : '☂️ ') + esc(est.insurance.text) + '</dd></div></dl>';
   }
 
   // ---------- journey ----------
@@ -54,7 +61,8 @@
     }
     $('journey').innerHTML = S.map((s, i) => {
       const risk = i <= est.riskAt ? 'seller' : 'buyer', cost = owner[s.id] || (i <= est.costAt ? 'seller' : 'buyer');
-      return '<li class="stage' + (i === est.riskAt ? ' is-risk' : '') + (i === est.costAt ? ' is-cost' : '') + '">' +
+      const gap = i > est.riskAt && i <= est.costAt;
+      return '<li class="stage' + (i === est.riskAt ? ' is-risk' : '') + (i === est.costAt ? ' is-cost' : '') + (gap ? ' is-gap' : '') + '">' +
         '<span class="stage-icon" aria-hidden="true">' + s.icon + '</span><span class="stage-label">' + esc(s.label) + '</span>' +
         (i === est.riskAt ? '<span class="marker m-risk">Risk passes here</span>' : '') +
         (i === est.costAt ? '<span class="marker m-cost">Seller pays to here</span>' : '') +
@@ -65,8 +73,9 @@
     const sc = document.querySelector('.journey-scroll'), risk = $('journey').querySelector('.is-risk');
     if (sc && risk && sc.scrollWidth > sc.clientWidth) sc.scrollLeft = risk.offsetLeft - sc.clientWidth / 2 + risk.offsetWidth / 2;
     const duty = est.route.sea && est.term.code === 'DAP' ? ' (the buyer still pays import duties and taxes)' : '';
-    $('journeySummary').textContent = est.term.code + ': risk passes to the buyer at “' + S[est.riskAt].label.toLowerCase() +
-      '”, and the seller pays up to “' + S[est.costAt].label.toLowerCase() + '”' + duty + '.';
+    const gapNote = est.costAt > est.riskAt ? ' The striped stretch is the C-term gap: ' + est.kase.buyer + ' carries the risk while ' + est.kase.seller + ' pays the bill.' : '';
+    $('journeySummary').textContent = est.term.code + ': risk passes to ' + est.kase.buyer + ' at “' + S[est.riskAt].label.toLowerCase() +
+      '”, and ' + est.kase.seller + ' pays up to “' + S[est.costAt].label.toLowerCase() + '”' + duty + '.' + gapNote;
   }
 
   function moveToken(now) {
@@ -94,7 +103,7 @@
     $('items').innerHTML = e.items.map((it) => '<tr><td>' + esc(it.label) + '</td><td><span class="who ' + it.payer + '">' +
       (it.payer === 'seller' ? 'Seller, in the price' : 'Buyer, separately') + '</span></td><td class="num">' + money(it.amount) + '</td></tr>').join('');
     // Compare every available term: seller-arranged costs (with margin) vs costs the buyer arranges.
-    const all = terms.map((t) => M.estimate(st.o, st.d, st.cargo, t.code, st.margin));
+    const all = terms.map((t) => M.estimateCase(kase, t.code, st.margin));
     const max = Math.max(...all.map((x) => x.sellerCosts + x.sellerMargin + x.buyerCosts));
     $('bars').innerHTML = all.map((x) => {
       const s = ((x.sellerCosts + x.sellerMargin) / max) * 100, b = (x.buyerCosts / max) * 100;
@@ -120,6 +129,13 @@
     if (t === 'DPU') out.push(['info', 'DPU replaced DAT', 'Incoterms 2020 renamed DAT (Delivered at Terminal) to DPU, and the place can now be anywhere. It’s the only term where the seller unloads.']);
     if (t === 'DDP') out.push(e.route.sea ? ['warn', 'DDP is a big ask', 'The seller clears import customs and pays duties and taxes in the buyer’s country, which can mean registering there for tax. Many sellers add a buffer for that.']
       : ['info', 'DDP at home', 'On a domestic move there’s no import duty, so DDP costs the same as DAP.']);
+    out.push(['info', 'Write it the ICC way', 'Always name the term, the place and the version: “' + e.named.full + '”. ' +
+      (e.named.side === 'origin' ? 'E and F terms name a place on the origin side.' : 'C and D terms name a place on the destination side.')]);
+    out.push(['info', 'Who calls the freight forwarder?', 'Whoever pays for the main trip books it. Under E and F terms that’s the buyer; under C and D terms it’s the seller.']);
+    if (!e.insurance.required) out.push(['tip', 'Insurance is implied', 'Only CIF and CIP make insurance compulsory. Under the other terms nobody has to insure, but whoever carries the risk usually does: nobody wants to lose their goods uninsured.']);
+    if (t === 'DDP' && e.route.sea) out.push(['warn', 'Why DDP is rare', 'The buyer is usually better at clearing its own customs. DDP works best when the seller has a registered business number in the import country, or for moves within North America.']);
+    if (t === 'DPU' || t === 'DAP') out.push(['info', 'What “unloading” means', 'Unloading means taking the cargo off the arriving truck, train or ship. At a terminal that’s lifting the container off; at the buyer’s door, agree whether it also means taking the goods out.']);
+    if (st.margin === 0) out.push(['good', 'Same trip, same total', 'With no seller margin, the buyer’s total cost barely changes between terms. Incoterms don’t make the trip cheaper; they decide who pays each part, and who carries the risk.']);
     out.push(['tip', 'Sellers pass costs on', 'Whatever the seller arranges ends up in its price, usually with a margin on top. Drag the margin slider to see how much.']);
     $('lessons').innerHTML = out.map(([k, h, p]) => '<li class="lesson ' + k + '"><b>' + esc(h) + '</b><p>' + esc(p) + '</p></li>').join('');
   }
@@ -134,6 +150,10 @@
     ['Under DDP, who pays the import duties?', ['The buyer', 'The customs broker', 'The seller'], 2, 'The seller. That’s what “duty paid” means.'],
     ['Which term makes the seller buy the higher level of insurance?', ['CIP', 'CIF', 'CPT'], 0, 'CIP needs Institute Cargo Clauses A cover. CIF only needs the minimum, Clauses C.'],
     ['Sliding from EXW to DDP, the seller’s price usually…', ['Goes down', 'Goes up', 'Stays the same'], 1, 'It goes up: the seller arranges more of the trip and builds those costs, plus a margin, into the price.'],
+    ['For a C or D term, the named place is on which side?', ['The origin side', 'The destination side', 'Whichever the carrier picks'], 1, 'C and D terms name a destination place, like CIF Halifax. E and F terms name an origin place, like FOB Santos.'],
+    ['Under FOB, who books the ship, usually through a freight forwarder?', ['The seller', 'The buyer', 'The customs broker'], 1, 'The buyer. Whoever pays for the main trip books it, and under F terms that’s the buyer.'],
+    ['Why is DDP fairly rare?', ['It’s illegal in Canada', 'The seller must clear customs in the buyer’s country', 'It has no risk point'], 1, 'The seller has to handle import customs and taxes abroad. It works best with a business number in the import country or within North America.'],
+    ['In which terms do cost and risk change hands at different points?', ['C terms', 'D terms', 'F terms'], 0, 'Only the C terms: the seller pays the main carriage, but the risk passes to the buyer before it starts.'],
   ];
   const qz = { order: [], i: 0, score: 0, picked: -1 };
   function newQuiz() {
@@ -159,15 +179,28 @@
 
   // ---------- update everything ----------
   function update() {
-    const r = M.route(st.o, st.d);
+    kase = getCase();
+    const r = kase.route;
     terms = M.termsFor(r);
     if (!terms.some((t) => t.code === st.code)) st.code = 'FCA';
-    est = M.estimate(st.o, st.d, st.cargo, st.code, st.margin);
+    est = M.estimateCase(kase, st.code, st.margin);
+    const cls = st.mode === 'class';
+    $('modeClass').setAttribute('aria-pressed', String(cls));
+    $('modeOwn').setAttribute('aria-pressed', String(!cls));
+    $('presetPick').hidden = !cls;
+    $('ownPick').hidden = cls;
+    $('cargoPanel').hidden = cls;
+    $('numTerms').textContent = cls ? '2' : '3';
+    $('presets').innerHTML = M.PRESETS.map((p, i) => '<button type="button" class="tile preset" data-i="' + i + '" aria-pressed="' + (st.preset === i) + '">' +
+      '<b>' + esc(p.title) + '</b><span>' + esc(p.route.originPort) + ' to ' + esc(p.route.destPort) + ', ' + esc(p.cargo.size) + '</span>' +
+      '<em>Goods worth ' + money(p.cargo.value) + '</em></button>').join('');
     chips($('origins'), M.ORIGINS, 'o', 'Exporter location');
     chips($('dests'), M.DESTS, 'd', 'Importer location');
     cargoTiles();
     $('routeBadge').className = 'route-badge ' + r.kind;
-    $('routeBadge').textContent = r.sea
+    $('routeBadge').textContent = cls
+      ? '🌊 Class example: ' + kase.seller + ' is the seller (exporter), ' + kase.buyer + ' is the buyer (importer). Maersk from ' + r.originPort + ' to ' + r.destPort + '. Duties are left out, like in class.'
+      : r.sea
       ? '🌊 Overseas: ocean freight from ' + r.originPort + ' to ' + r.destPort + ', with export and import customs'
       : '🛣️ Domestic: ' + est.cargo.landMode.toLowerCase() + ' all the way, no customs';
     termStrip(); termCard(); journey(); costs(); lessons();
@@ -177,6 +210,9 @@
     $('termRange').addEventListener('input', (e) => { st.code = terms[+e.target.value].code; update(); });
     $('termStrip').addEventListener('click', (e) => { const b = e.target.closest('.term'); if (b && !b.disabled) { st.code = b.dataset.code; update(); } });
     $('bars').addEventListener('click', (e) => { const b = e.target.closest('.bar'); if (b) { st.code = b.dataset.code; update(); } });
+    $('modeClass').addEventListener('click', () => { st.mode = 'class'; update(); });
+    $('modeOwn').addEventListener('click', () => { st.mode = 'own'; update(); });
+    $('presets').addEventListener('click', (e) => { const b = e.target.closest('.preset'); if (b) { st.preset = +b.dataset.i; update(); } });
     $('margin').addEventListener('input', (e) => { st.margin = +e.target.value / 100; $('marginVal').textContent = e.target.value + '%'; update(); });
   }
 

@@ -50,6 +50,25 @@ main { max-width: 1040px; margin: 0 auto; padding: 18px 14px 8px; display: grid;
 .num { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--red); color: #fff; font-size: 19px; }
 .hint { margin: 0 0 10px; color: var(--soft); font-size: 15px; }
 
+/* ---------- v2 additions ---------- */
+[hidden] { display: none !important; }
+.v2 { display: inline-block; vertical-align: super; margin-left: 6px; padding: 2px 10px; border-radius: 999px; background: #fff; color: var(--red); font-size: 0.35em; }
+.whatsnew { max-width: 1040px; margin: 14px auto 0; padding: 0 14px; }
+.whatsnew summary { cursor: pointer; display: inline-flex; align-items: center; min-height: 44px; padding: 6px 16px; border-radius: 999px; background: var(--gC); font-weight: 800; }
+.whatsnew ul { margin: 10px 0 0; padding: 14px 18px 14px 34px; background: var(--card); border: 3px solid var(--gC); border-radius: 14px; }
+.mode { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.mode-btn { min-height: 46px; padding: 8px 16px; border-radius: 999px; border: 3px solid var(--line); background: var(--card); font-weight: 800; cursor: pointer; }
+.mode-btn[aria-pressed="true"] { border-color: var(--red); background: var(--red); color: #fff; }
+.presets { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.preset b { font-size: 18px; }
+.formal { margin: 10px 0 0; padding: 8px 12px; border-radius: 10px; background: var(--bg); font-family: var(--head); font-weight: 700; font-size: 18px; }
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 10px 0 0; }
+.facts div { padding: 8px 10px; border-radius: 10px; background: var(--bg); }
+.facts dt { font-size: 13px; font-weight: 800; color: var(--soft); }
+.facts dd { margin: 2px 0 0; font-weight: 700; font-size: 15px; }
+.stage.is-gap .cell { background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.28) 0 6px, transparent 6px 12px); }
+.stage.is-gap .stage-label { color: #7a5300; }
+
 /* ---------- pickers ---------- */
 .pick-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
@@ -169,7 +188,7 @@ main { max-width: 1040px; margin: 0 auto; padding: 18px 14px 8px; display: grid;
 
 /* ---------- phones ---------- */
 @media (max-width: 760px) {
-  .pick-row, .lessons { grid-template-columns: 1fr; }
+  .pick-row, .lessons, .presets, .facts { grid-template-columns: 1fr; }
   .tiles { grid-template-columns: 1fr; }
   .tile { grid-template-columns: auto 1fr; column-gap: 12px; align-items: center; }
   .tile-icon { grid-row: span 3; }

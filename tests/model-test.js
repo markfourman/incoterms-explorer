@@ -31,5 +31,22 @@ for (let o = 0; o < M.ORIGINS.length; o++) for (let d = 0; d < M.DESTS.length; d
   }
   if (!r.sea) { let threw = false; try { M.estimate(o, d, c, 'FOB', 0); } catch (e) { threw = true; } ok(threw, 'FOB allowed on a domestic route'); }
 }
+for (let i = 0; i < M.PRESETS.length; i++) {
+  const k = M.presetCase(i), terms = M.termsFor(k.route);
+  let prev = -1;
+  for (const t of terms) {
+    const e = M.estimateCase(k, t.code, 0); n++;
+    const tag = 'class example ' + (i + 1) + ' ' + t.code;
+    ok(e.quote >= prev, tag + ': quote went down along the slider');
+    prev = e.quote;
+    ok(e.named.full.includes('Incoterms® 2020'), tag + ': named place missing');
+    ok(e.named.side === (['E', 'F'].includes(t.group) ? 'origin' : 'destination'), tag + ': wrong named-place side');
+    ok(e.books === (['E', 'F'].includes(t.group) ? 'buyer' : 'seller'), tag + ': wrong party books the main carriage');
+    ok(e.insurance.required === (t.code === 'CIF' || t.code === 'CIP'), tag + ': insurance should only be required for CIF and CIP');
+    ok(Math.abs(e.landed - (e.goods + e.items.reduce((a, x) => a + x.amount, 0))) < 1, tag + ': costs do not add up');
+  }
+  const exw = M.estimateCase(k, 'EXW', 0), ddp = M.estimateCase(k, 'DDP', 0);
+  ok(exw.landed === ddp.landed, 'class example ' + (i + 1) + ': with no margin, the buyer’s total should be the same for every term');
+}
 if (fail.length) { console.log(fail.slice(0, 20).join('\n')); console.log('MODEL TEST FAILED: ' + fail.length + ' problem(s)'); process.exit(1); }
 console.log('MODEL TEST PASSED: ' + n + ' route, cargo and Incoterm combinations checked.');
